@@ -1,4 +1,4 @@
-/**
+/*
     QMQTT2SQL subscribes to a MQTT broker and stores all messages in a PostgreSQL database.
     Copyright (C) 2024  Thomas Zimmermann
 
@@ -15,14 +15,72 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "mqttsubscriber.h"
 
 #include <QSqlDatabase>
 #include <QSqlQuery>
+#include <QSqlError>
+
+/**
+ * Convert QMqttClient::ClientError to a descriptive string.
+ */
+QString qMqttClientErrorToString(QMqttClient::ClientError error)
+{
+    // Error description taken from: https://doc.qt.io/qt-5/qmqttclient.html#ClientError-enum
+    switch (error)
+    {
+    case QMqttClient::NoError: return "No error occurred."; break;
+    case QMqttClient::InvalidProtocolVersion: return "Error: The broker does not accept a connection using the specified protocol version."; break;
+    case QMqttClient::IdRejected: return "Error: The client ID is malformed. This might be related to its length."; break;
+    case QMqttClient::ServerUnavailable: return "Error: The network connection has been established, but the service is unavailable on the broker side."; break;
+    case QMqttClient::BadUsernameOrPassword: return "Error: The data in the username or password is malformed."; break;
+    case QMqttClient::NotAuthorized: return "Error: The client is not authorized to connect."; break;
+
+    case QMqttClient::TransportInvalid: return "Error: The underlying transport caused an error. For example, the connection might have been interrupted unexpectedly."; break;
+    case QMqttClient::ProtocolViolation: return "Error: The client encountered a protocol violation, and therefore closed the connection."; break;
+    case QMqttClient::UnknownError: return "Error: An unknown error occurred."; break;
+    case QMqttClient::Mqtt5SpecificError: return "Error: The error is related to MQTT protocol level 5. A reason code might provide more details."; break;
+    }
+    return QString();
+}
+
+/**
+ * Convert QMqttClient::ClientState to a descriptive string.
+ */
+QString qMqttClientStateToString(QMqttClient::ClientState state)
+{
+    // State description taken from: https://doc.qt.io/qt-5/qmqttclient.html#ClientState-enum
+    switch (state)
+    {
+    case QMqttClient::Disconnected: return "The client is disconnected from the broker."; break;
+    case QMqttClient::Connecting: return "A connection request has been made, but the broker has not approved the connection yet."; break;
+    case QMqttClient::Connected: return "The client is connected to the broker."; break;
+    }
+    return QString();
+}
+
+/**
+ * Convert QMqttSubscription::SubscriptionState to a descriptive string.
+ */
+QString qMqttSubscriptionState(QMqttSubscription::SubscriptionState state)
+{
+    // State description taken from: https://doc.qt.io/qt-5/qmqttsubscription.html#SubscriptionState-enum
+    switch (state)
+    {
+    case QMqttSubscription::Unsubscribed: return "The topic has been unsubscribed from."; break;
+    case QMqttSubscription::SubscriptionPending: return "A request for a subscription has been sent, but is has not been confirmed by the broker yet."; break;
+    case QMqttSubscription::Subscribed: return "The subscription was successful and messages will be received."; break;
+    case QMqttSubscription::UnsubscriptionPending: return "A request to unsubscribe from a topic has been sent, but it has not been confirmed by the broker yet."; break;
+    case QMqttSubscription::Error: return "An error occured."; break;
+    }
+    return QString();
+}
 
 MqttSubscriber::MqttSubscriber(const Mqtt2SqlConfig & config, QObject *parent)
     : QObject{parent}
+    , m_topic(config.mqttTopic())
 {
     m_client.setProtocolVersion(config.mqttVersion());
     m_client.setHostname(config.mqttHostname());
@@ -52,49 +110,70 @@ MqttSubscriber::MqttSubscriber(const Mqtt2SqlConfig & config, QObject *parent)
     }
 
     QSqlDatabase db = QSqlDatabase::addDatabase("QPSQL");
-    db.setHostName("localhost");
-    db.setDatabaseName("mqtt");
-    db.setUserName("dbmas");
-    db.setPassword("dbmas");
+    db.setHostName(config.sqlHostname());
+    db.setDatabaseName(config.sqlDatabase());
+    db.setPort(config.sqlPort());
+    db.setUserName(config.sqlUsername());
+    db.setPassword(config.sqlPassword());
     if (db.open())
     {
         QSqlQuery query("CREATE TABLE IF NOT EXISTS mqtt (ts timestamp with time zone, topic varchar(255), data jsonb)");
         query.exec();
     }
+    else
+    {
+        QTextStream(stderr) << "Error: Faild to open database: " << db.lastError().text() << Qt::endl;
+        emit errorOccured(db.lastError().text(), 2);
+    }
 }
 
+/**
+ * @brief Called when the connection to the MQTT brocker is established and will subscribe to the topic.
+ */
 void MqttSubscriber::subscribe()
 {
     QTextStream(stdout) << "MQTT connection established" << Qt::endl;
 
     m_subscription = m_client.subscribe(m_topic);
     if (!m_subscription) {
-        QTextStream(stderr) << "Failed to subscribe to " << m_topic << Qt::endl;
-        emit errorOccured(m_client.error());
+        QTextStream(stderr) << "Failed to subscribe to " << m_topic.filter() << Qt::endl;
+        emit errorOccured("Failed to subscribe to " + m_topic.filter(), 1);
     }
 
     connect(m_subscription, &QMqttSubscription::stateChanged, this,
             [](QMqttSubscription::SubscriptionState s) {
-        QTextStream(stdout) << "Subscription state changed: " << s << Qt::endl;
+        QTextStream(stdout) << "Subscription state changed: " << qMqttSubscriptionState(s) << Qt::endl;
     });
 
     connect(m_subscription, &QMqttSubscription::messageReceived, this,
-            [this](QMqttMessage msg) {
+            [this](const QMqttMessage & msg) {
         handleMessage(msg);
     });
 }
 
+/**
+ * @brief Called when an error occurs in the MQTT client.
+ *
+ * Will print the error via \ref qMqttClientErrorToString and emit the signal \ref errorOccured.
+ */
 void MqttSubscriber::onConnectionError(QMqttClient::ClientError error)
 {
     if (error != QMqttClient::NoError)
     {
-        QTextStream(stderr) << "MQTT error: " << error << Qt::endl;
-        emit errorOccured(error);
+        QTextStream(stderr) << "MQTT error: " << qMqttClientErrorToString(error) << Qt::endl;
+        emit errorOccured(qMqttClientErrorToString(error), 3);
     }
 }
 
+/**
+ * @brief Called when a MQTT message is received.
+ *
+ * Inserts the received message in the QSqlDatabase, with current timestamp as ts,
+ * the messages topic as topic and the messages payload as data.
+ */
 void MqttSubscriber::handleMessage(const QMqttMessage &msg)
 {
+    QTextStream(stdout) << "Message received. Topic: " << msg.topic().name() << ", Message: " << msg.payload() << Qt::endl;
     QSqlDatabase db = QSqlDatabase::database();
     if (db.isValid() && db.isOpen())
     {

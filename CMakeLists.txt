@@ -33,7 +33,7 @@ add_executable(QMQTT2SQL
 )
 target_link_libraries(QMQTT2SQL Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Mqtt Qt${QT_VERSION_MAJOR}::Sql)
 
-IndicateExternalFile(${PROJECT_NAME} "README.md")
+IndicateExternalFile(${PROJECT_NAME} "README.md" "res/qmqtt2sql.ini")
 
 install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT application)
 

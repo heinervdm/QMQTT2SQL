@@ -1,4 +1,4 @@
-/**
+/*
     QMQTT2SQL subscribes to a MQTT broker and stores all messages in a PostgreSQL database.
     Copyright (C) 2024  Thomas Zimmermann
 
@@ -15,21 +15,24 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "mqtt2sqlconfig.h"
 
 Mqtt2SqlConfig::Mqtt2SqlConfig()
     : m_settings(nullptr)
-{
-
-}
+{}
 
 bool Mqtt2SqlConfig::parse(const QString &configFile)
 {
     m_settings = new QSettings(configFile, QSettings::IniFormat);
 
     m_settings->beginGroup("psql");
-
+    m_sqlHostname = m_settings->value("hostname").toString();
+    m_sqlPort = m_settings->value("port", 5432).toUInt();
+    m_sqlUsername = m_settings->value("username").toString();
+    m_sqlPassword = m_settings->value("password").toString();
+    m_sqlDatabase = m_settings->value("database").toString();
     m_settings->endGroup();
 
     m_settings->beginGroup("mqtt");
@@ -63,6 +66,7 @@ bool Mqtt2SqlConfig::parse(const QString &configFile)
         return false;
     }
     m_mqttUseTls = m_settings->value("usetls", false).toBool();
+    m_mqttTopic = m_settings->value("topic", "#").toString();
     m_settings->endGroup();
 
     return true;

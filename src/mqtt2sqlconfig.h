@@ -1,4 +1,4 @@
-/**
+/*
     QMQTT2SQL subscribes to a MQTT broker and stores all messages in a PostgreSQL database.
     Copyright (C) 2024  Thomas Zimmermann
 
@@ -15,6 +15,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 #ifndef MQTT2SQLCONFIG_H
 #define MQTT2SQLCONFIG_H
@@ -37,6 +38,13 @@ public:
     const QString & mqttPassword() const { return m_mqttPassword; }
     QMqttClient::ProtocolVersion mqttVersion() const { return m_mqttVersion; }
     bool mqttUseTls() const { return m_mqttUseTls; }
+    const QString & mqttTopic() const  { return m_mqttTopic; }
+
+    const QString & sqlHostname() const { return m_sqlHostname; }
+    quint16 sqlPort() const { return m_sqlPort; }
+    const QString & sqlUsername() const { return m_sqlUsername; }
+    const QString & sqlPassword() const { return m_sqlPassword; }
+    const QString & sqlDatabase() const { return m_sqlDatabase; }
 
 private:
     QSettings * m_settings;
@@ -47,6 +55,13 @@ private:
     QString m_mqttPassword;
     QMqttClient::ProtocolVersion m_mqttVersion = QMqttClient::MQTT_3_1;
     bool m_mqttUseTls = false;
+    QString m_mqttTopic;
+
+    QString m_sqlHostname;
+    quint16 m_sqlPort = 5432;
+    QString m_sqlUsername;
+    QString m_sqlPassword;
+    QString m_sqlDatabase;
 };
 
 #endif // MQTT2SQLCONFIG_H

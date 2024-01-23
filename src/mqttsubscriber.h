@@ -1,4 +1,4 @@
-﻿/**
+﻿/*
     QMQTT2SQL subscribes to a MQTT broker and stores all messages in a PostgreSQL database.
     Copyright (C) 2024  Thomas Zimmermann
 
@@ -15,6 +15,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 #ifndef MQTTSUBSCRIBER_H
 #define MQTTSUBSCRIBER_H
@@ -33,7 +34,8 @@ public:
     explicit MqttSubscriber(const Mqtt2SqlConfig &config, QObject *parent = nullptr);
 
 signals:
-    void errorOccured(QMqttClient::ClientError error);
+    /// Is emitted when an error occurs.
+    void errorOccured(const QString & error, int exitcode);
 
 private slots:
     void subscribe();
@@ -43,7 +45,7 @@ private slots:
 private:
     QMqttClient m_client;
     QMqttSubscription *m_subscription;
-    QString m_topic;
+    QMqttTopicFilter m_topic;
 
 };
 
