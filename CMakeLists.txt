@@ -38,6 +38,6 @@ target_link_libraries(QMQTT2SQL Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR
 IndicateExternalFile(${PROJECT_NAME} "README.md" "res/qmqtt2sql.ini" "res/qmqtt2sql.service.in")
 
 install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT application)
-install(FILES qmqtt2sql.ini DESTINATION ${CMAKE_INSTALL_SYSCONFDIR} COMPONENT data)
+install(FILES res/qmqtt2sql.ini DESTINATION ${CMAKE_INSTALL_SYSCONFDIR} COMPONENT data)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/qmqtt2sql.service DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/systemd/system/ COMPONENT data)
 

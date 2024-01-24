@@ -185,5 +185,9 @@ void MqttSubscriber::handleMessage(const QMqttMessage &msg)
             query.bindValue(":data", msg.payload());
             query.exec();
         }
+        else
+        {
+            QTextStream(stderr) << "SQL error: can not prepare statement: " << query.lastError().text() << Qt::endl;
+        }
     }
 }
