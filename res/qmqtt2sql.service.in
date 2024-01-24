@@ -1,0 +1,12 @@
+[Unit]
+Description=QMQTT2SQL subscribes to a MQTT broker and stores all messages in a PostgreSQL database.
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+ExecStart=@CMAKE_INSTALL_BINDIR@/QMQTT2SQL --config @CMAKE_INSTALL_SYSCONFDIR@/qmqtt2sql.ini
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+ 

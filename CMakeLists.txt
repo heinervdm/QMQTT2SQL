@@ -13,6 +13,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include(GNUInstallDirs)
 
+configure_file(res/qmqtt2sql.service.in ${CMAKE_CURRENT_BINARY_DIR}/qmqtt2sql.service @ONLY)
+
 # https://stackoverflow.com/a/43355735
 function(IndicateExternalFile _target)
     foreach(_file IN ITEMS ${ARGN})
@@ -33,7 +35,9 @@ add_executable(QMQTT2SQL
 )
 target_link_libraries(QMQTT2SQL Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Mqtt Qt${QT_VERSION_MAJOR}::Sql)
 
-IndicateExternalFile(${PROJECT_NAME} "README.md" "res/qmqtt2sql.ini")
+IndicateExternalFile(${PROJECT_NAME} "README.md" "res/qmqtt2sql.ini" "res/qmqtt2sql.service.in")
 
 install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT application)
+install(FILES qmqtt2sql.ini DESTINATION ${CMAKE_INSTALL_SYSCONFDIR} COMPONENT data)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/qmqtt2sql.service DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/systemd/system/ COMPONENT data)
 

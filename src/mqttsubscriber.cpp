@@ -117,7 +117,7 @@ MqttSubscriber::MqttSubscriber(const Mqtt2SqlConfig & config, QObject *parent)
     db.setPassword(config.sqlPassword());
     if (db.open())
     {
-        QSqlQuery query("CREATE TABLE IF NOT EXISTS mqtt (ts timestamp with time zone, topic varchar(255), data jsonb)");
+        QSqlQuery query("CREATE TABLE IF NOT EXISTS mqtt (ts timestamp with time zone, topic varchar(255), data jsonb);");
         query.exec();
     }
     else
@@ -178,7 +178,7 @@ void MqttSubscriber::handleMessage(const QMqttMessage &msg)
     if (db.isValid() && db.isOpen())
     {
         QSqlQuery query;
-        if (query.prepare("INSERT INTO person (ts, topic, data) VALUES (:ts, :topic, :data)"))
+        if (query.prepare("INSERT INTO mqtt (ts, topic, data) VALUES (:ts, :topic, :data);"))
         {
             query.bindValue(":ts", QDateTime::currentDateTime());
             query.bindValue(":topic", msg.topic().name());
