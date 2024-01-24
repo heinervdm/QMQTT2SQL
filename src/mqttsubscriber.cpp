@@ -182,7 +182,7 @@ void MqttSubscriber::handleMessage(const QMqttMessage &msg)
         {
             query.bindValue(":ts", QDateTime::currentDateTime());
             query.bindValue(":topic", msg.topic().name());
-            query.bindValue(":data", msg.payload());
+            query.bindValue(":data", QString::fromUtf8(msg.payload()));
             if (!query.exec())
             {
                 QTextStream(stderr) << "SQL error: can not execute statement: " << query.lastError().text() << Qt::endl;
