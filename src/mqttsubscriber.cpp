@@ -183,11 +183,18 @@ void MqttSubscriber::handleMessage(const QMqttMessage &msg)
             query.bindValue(":ts", QDateTime::currentDateTime());
             query.bindValue(":topic", msg.topic().name());
             query.bindValue(":data", msg.payload());
-            query.exec();
+            if (!query.exec())
+            {
+                QTextStream(stderr) << "SQL error: can not execute statement: " << query.lastError().text() << Qt::endl;
+            }
         }
         else
         {
             QTextStream(stderr) << "SQL error: can not prepare statement: " << query.lastError().text() << Qt::endl;
         }
+    }
+    else
+    {
+        QTextStream(stderr) << "SQL error: Database not open!" << Qt::endl;
     }
 }
