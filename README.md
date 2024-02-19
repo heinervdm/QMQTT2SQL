@@ -1,6 +1,6 @@
 # QMQTT2SQL
 QMQTT2SQL subscribes to a MQTT broker and stores all messages in a PostgreSQL database.
-It is publiched under the GPL3.0+ license.
+It is published under the GPL3.0+ license.
 
 ## Dependencies
 | Dependency  | Link                                                             |
