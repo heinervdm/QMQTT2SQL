@@ -33,6 +33,8 @@ bool Mqtt2SqlConfig::parse(const QString &configFile)
     m_sqlUsername = m_settings->value("username").toString();
     m_sqlPassword = m_settings->value("password").toString();
     m_sqlDatabase = m_settings->value("database").toString();
+    m_sqlMaxStorageTime = std::chrono::hours(m_settings->value("maxstoragehours", 7*24).toInt());
+
     m_settings->endGroup();
 
     m_settings->beginGroup("mqtt");

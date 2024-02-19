@@ -118,7 +118,34 @@ MqttSubscriber::MqttSubscriber(const Mqtt2SqlConfig & config, QObject *parent)
     if (db.open())
     {
         QSqlQuery query("CREATE TABLE IF NOT EXISTS mqtt (ts timestamp with time zone, topic varchar(255), data jsonb);");
-        query.exec();
+        if (!query.exec())
+        {
+            QTextStream(stderr) << "Error while creating mqtt table: " << query.lastError().text() << Qt::endl;
+        }
+        QSqlQuery query2("CREATE INDEX mqtt_topic_idx ON mqtt (topic DESC);");
+        if (!query2.exec())
+        {
+            QTextStream(stderr) << "Error while creating index: " << query2.lastError().text() << Qt::endl;
+        }
+        QSqlQuery query3(QString(
+                     "CREATE FUNCTION delete_old_rows() RETURNS trigger"
+                         "LANGUAGE plpgsql"
+                         "AS $$"
+                     "BEGIN"
+                       "DELETE FROM mqtt WHERE ts < CURRENT_TIMESTAMP - INTERVAL '%1 hours';"
+                       "RETURN NULL;"
+                     "END;"
+                     "$$;").arg(config.sqlMaxStroageTime().count()));
+        if (!query3.exec())
+        {
+            QTextStream(stderr) << "Error while creating trigger function: " << query3.lastError().text() << Qt::endl;
+        }
+        QSqlQuery query4("CREATE TRIGGER trigger_delete_old_rows AFTER INSERT ON mqtt EXECUTE PROCEDURE delete_old_rows();");
+
+        if (!query4.exec())
+        {
+            QTextStream(stderr) << "Error while creating trigger: " << query4.lastError().text() << Qt::endl;
+        }
     }
     else
     {

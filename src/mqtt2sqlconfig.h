@@ -22,6 +22,7 @@
 
 #include <QSettings>
 #include <QMqttClient>
+#include <chrono>
 
 class Mqtt2SqlConfig
 {
@@ -45,6 +46,7 @@ public:
     const QString & sqlUsername() const { return m_sqlUsername; }
     const QString & sqlPassword() const { return m_sqlPassword; }
     const QString & sqlDatabase() const { return m_sqlDatabase; }
+    std::chrono::hours sqlMaxStroageTime() const { return m_sqlMaxStorageTime; }
 
 private:
     QSettings * m_settings;
@@ -62,6 +64,7 @@ private:
     QString m_sqlUsername;
     QString m_sqlPassword;
     QString m_sqlDatabase;
+    std::chrono::hours m_sqlMaxStorageTime;
 };
 
 #endif // MQTT2SQLCONFIG_H
