@@ -21,6 +21,7 @@
 #define MQTTSUBSCRIBER_H
 
 #include <QObject>
+#include <QTimer>
 #include <QMqttClient>
 #include <QMqttSubscription>
 #include <QMqttMessage>
@@ -41,11 +42,13 @@ private slots:
     void subscribe();
     void onConnectionError(QMqttClient::ClientError error);
     void handleMessage(const QMqttMessage &msg);
+    void cleanup();
 
 private:
     QMqttClient m_client;
     QMqttSubscription *m_subscription;
-    QMqttTopicFilter m_topic;
+    QTimer m_cleanupTimer;
+    Mqtt2SqlConfig m_config;
 
 };
 

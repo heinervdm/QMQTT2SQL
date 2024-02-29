@@ -80,7 +80,7 @@ QString qMqttSubscriptionState(QMqttSubscription::SubscriptionState state)
 
 MqttSubscriber::MqttSubscriber(const Mqtt2SqlConfig & config, QObject *parent)
     : QObject{parent}
-    , m_topic(config.mqttTopic())
+    , m_config(config)
 {
     m_client.setProtocolVersion(config.mqttVersion());
     m_client.setHostname(config.mqttHostname());
@@ -127,31 +127,17 @@ MqttSubscriber::MqttSubscriber(const Mqtt2SqlConfig & config, QObject *parent)
         {
             QTextStream(stderr) << "Error while creating index: " << query2.lastError().text() << Qt::endl;
         }
-        QSqlQuery query3(QString(
-                     "CREATE FUNCTION delete_old_rows() RETURNS trigger"
-                         "LANGUAGE plpgsql"
-                         "AS $$"
-                     "BEGIN"
-                       "DELETE FROM mqtt WHERE ts < CURRENT_TIMESTAMP - INTERVAL '%1 hours';"
-                       "RETURN NULL;"
-                     "END;"
-                     "$$;").arg(config.sqlMaxStroageTime().count()));
-        if (!query3.exec())
-        {
-            QTextStream(stderr) << "Error while creating trigger function: " << query3.lastError().text() << Qt::endl;
-        }
-        QSqlQuery query4("CREATE TRIGGER trigger_delete_old_rows AFTER INSERT ON mqtt EXECUTE PROCEDURE delete_old_rows();");
-
-        if (!query4.exec())
-        {
-            QTextStream(stderr) << "Error while creating trigger: " << query4.lastError().text() << Qt::endl;
-        }
     }
     else
     {
         QTextStream(stderr) << "Error: Faild to open database: " << db.lastError().text() << Qt::endl;
         emit errorOccured(db.lastError().text(), 2);
     }
+
+    m_cleanupTimer.setInterval(60*60*1000);
+    m_cleanupTimer.setSingleShot(false);
+    connect(&m_cleanupTimer, &QTimer::timeout, this, &MqttSubscriber::cleanup);
+    m_cleanupTimer.start();
 }
 
 /**
@@ -161,10 +147,11 @@ void MqttSubscriber::subscribe()
 {
     QTextStream(stdout) << "MQTT connection established" << Qt::endl;
 
-    m_subscription = m_client.subscribe(m_topic);
+    QMqttTopicFilter topic(m_config.mqttTopic());
+    m_subscription = m_client.subscribe(topic);
     if (!m_subscription) {
-        QTextStream(stderr) << "Failed to subscribe to " << m_topic.filter() << Qt::endl;
-        emit errorOccured("Failed to subscribe to " + m_topic.filter(), 1);
+        QTextStream(stderr) << "Failed to subscribe to " << topic.filter() << Qt::endl;
+        emit errorOccured("Failed to subscribe to " + topic.filter(), 1);
     }
 
     connect(m_subscription, &QMqttSubscription::stateChanged, this,
@@ -210,6 +197,35 @@ void MqttSubscriber::handleMessage(const QMqttMessage &msg)
             query.bindValue(":ts", QDateTime::currentDateTime());
             query.bindValue(":topic", msg.topic().name());
             query.bindValue(":data", QString::fromUtf8(msg.payload()));
+            if (!query.exec())
+            {
+                QTextStream(stderr) << "SQL error: can not execute statement: " << query.lastError().text() << Qt::endl;
+            }
+        }
+        else
+        {
+            QTextStream(stderr) << "SQL error: can not prepare statement: " << query.lastError().text() << Qt::endl;
+        }
+    }
+    else
+    {
+        QTextStream(stderr) << "SQL error: Database not open!" << Qt::endl;
+    }
+}
+
+/**
+ * @brief Delete all outdated SQL entires
+ */
+void MqttSubscriber::cleanup()
+{
+    QTextStream(stdout) << "Cleaning up SQL database." << Qt::endl;
+    QSqlDatabase db = QSqlDatabase::database();
+    if (db.isValid() && db.isOpen())
+    {
+        QSqlQuery query;
+        if (query.prepare("DELETE FROM mqtt WHERE ts < :ts;"))
+        {
+            query.bindValue(":ts", QDateTime::currentDateTime().addSecs(m_config.sqlMaxStroageTime().count()*60*60*-1));
             if (!query.exec())
             {
                 QTextStream(stderr) << "SQL error: can not execute statement: " << query.lastError().text() << Qt::endl;
