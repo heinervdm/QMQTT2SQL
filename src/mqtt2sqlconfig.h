@@ -24,6 +24,18 @@
 #include <QMqttClient>
 #include <chrono>
 
+struct MqttTopicConfig
+{
+    QString topic;
+    QString jsonquery;
+    QVariant::Type type;
+    float scale;
+    QString group;
+    QString name;
+};
+
+Q_DECLARE_METATYPE(MqttTopicConfig)
+
 class Mqtt2SqlConfig
 {
 public:
@@ -39,7 +51,7 @@ public:
     const QString & mqttPassword() const { return m_mqttPassword; }
     QMqttClient::ProtocolVersion mqttVersion() const { return m_mqttVersion; }
     bool mqttUseTls() const { return m_mqttUseTls; }
-    const QString & mqttTopic() const  { return m_mqttTopic; }
+    const QList<MqttTopicConfig> & mqttTopicConfig() const  { return m_mqttTopicConfig; }
 
     const QString & sqlHostname() const { return m_sqlHostname; }
     quint16 sqlPort() const { return m_sqlPort; }
@@ -57,7 +69,7 @@ private:
     QString m_mqttPassword;
     QMqttClient::ProtocolVersion m_mqttVersion = QMqttClient::MQTT_3_1;
     bool m_mqttUseTls = false;
-    QString m_mqttTopic;
+    QList<MqttTopicConfig> m_mqttTopicConfig;
 
     QString m_sqlHostname;
     quint16 m_sqlPort = 5432;

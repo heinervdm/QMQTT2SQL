@@ -32,6 +32,7 @@ add_executable(QMQTT2SQL
   src/main.cpp
   src/mqttsubscriber.h src/mqttsubscriber.cpp
   src/mqtt2sqlconfig.h src/mqtt2sqlconfig.cpp
+  src/qtjsonpath.h
 )
 target_link_libraries(QMQTT2SQL Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Mqtt Qt${QT_VERSION_MAJOR}::Sql)
 

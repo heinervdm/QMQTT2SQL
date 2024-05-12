@@ -49,7 +49,9 @@ private:
     QMqttSubscription *m_subscription;
     QTimer m_cleanupTimer;
     Mqtt2SqlConfig m_config;
+    QList<QMqttSubscription*> m_subscriptions;
 
+    bool compareToPreviousValue(const QString &table, const QString &group, const QString &name, const QVariant &newValue);
 };
 
 #endif // MQTTSUBSCRIBER_H

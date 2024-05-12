@@ -34,7 +34,6 @@ bool Mqtt2SqlConfig::parse(const QString &configFile)
     m_sqlPassword = m_settings->value("password").toString();
     m_sqlDatabase = m_settings->value("database").toString();
     m_sqlMaxStorageTime = std::chrono::hours(m_settings->value("maxstoragehours", 7*24).toInt());
-
     m_settings->endGroup();
 
     m_settings->beginGroup("mqtt");
@@ -68,7 +67,27 @@ bool Mqtt2SqlConfig::parse(const QString &configFile)
         return false;
     }
     m_mqttUseTls = m_settings->value("usetls", false).toBool();
-    m_mqttTopic = m_settings->value("topic", "#").toString();
+
+    QStringList groups = m_settings->childGroups();
+    for (const QString & group : groups)
+    {
+        m_settings->beginGroup(group);
+        MqttTopicConfig c;
+        c.topic = m_settings->value("topic").toString();
+        c.jsonquery = m_settings->value("jsonquery").toString();
+        c.type = QVariant::nameToType(m_settings->value("type").toString().toStdString().c_str());
+        c.scale = std::numeric_limits<float>::quiet_NaN();
+        bool ok;
+        float tmp = m_settings->value("scale").toFloat(&ok);
+        if (ok)
+        {
+            c.scale = tmp;
+        }
+        c.group = m_settings->value("group").toString();
+        c.name = m_settings->value("name").toString();
+
+        m_settings->endGroup();
+    }
     m_settings->endGroup();
 
     return true;

@@ -18,6 +18,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "mqttsubscriber.h"
+#include "qtjsonpath.h"
 
 #include <QSqlDatabase>
 #include <QSqlQuery>
@@ -147,22 +148,30 @@ void MqttSubscriber::subscribe()
 {
     QTextStream(stdout) << "MQTT connection established" << Qt::endl;
 
-    QMqttTopicFilter topic(m_config.mqttTopic());
-    m_subscription = m_client.subscribe(topic);
-    if (!m_subscription) {
-        QTextStream(stderr) << "Failed to subscribe to " << topic.filter() << Qt::endl;
-        emit errorOccured("Failed to subscribe to " + topic.filter(), 1);
+    const QList<MqttTopicConfig> & configs = m_config.mqttTopicConfig();
+    for (const MqttTopicConfig & c : configs)
+    {
+        QMqttTopicFilter topic(c.topic);
+        QMqttSubscription *subscription = m_client.subscribe(topic);
+        if (!subscription) {
+            QTextStream(stderr) << "Failed to subscribe to " << topic.filter() << Qt::endl;
+            emit errorOccured("Failed to subscribe to " + topic.filter(), 1);
+        }
+        else
+        {
+            connect(subscription, &QMqttSubscription::stateChanged, this,
+                    [topic](QMqttSubscription::SubscriptionState s) {
+                QTextStream(stdout) << "Subscription state changed [topic " << topic.filter() << "]: " << qMqttSubscriptionState(s) << Qt::endl;
+            });
+
+            connect(subscription, &QMqttSubscription::messageReceived, this,
+                    [this](const QMqttMessage & msg) {
+                handleMessage(msg);
+            });
+            subscription->setProperty("config", QVariant::fromValue(c));
+            m_subscriptions.append(subscription);
+        }
     }
-
-    connect(m_subscription, &QMqttSubscription::stateChanged, this,
-            [](QMqttSubscription::SubscriptionState s) {
-        QTextStream(stdout) << "Subscription state changed: " << qMqttSubscriptionState(s) << Qt::endl;
-    });
-
-    connect(m_subscription, &QMqttSubscription::messageReceived, this,
-            [this](const QMqttMessage & msg) {
-        handleMessage(msg);
-    });
 }
 
 /**
@@ -180,6 +189,34 @@ void MqttSubscriber::onConnectionError(QMqttClient::ClientError error)
 }
 
 /**
+ * @brief Compare a value to the lastest one for the given group and name
+ * @param table Table to look for the given group and name
+ * @param group Group to look up
+ * @param name Name to look up in the given group
+ * @param newValue New value to compare with
+ * @return True if the values are identical, false otherwise
+ */
+bool MqttSubscriber::compareToPreviousValue(const QString & table, const QString & group, const QString & name, const QVariant & newValue)
+{
+    QSqlQuery squery;
+    squery.setForwardOnly(true);
+    if (squery.prepare("SELECT value FROM " + table + " WHERE group=:group AND name=:name ORDER BY ts DESC LIMIT 1"))
+    {
+        squery.bindValue(":group", group);
+        squery.bindValue(":name", name);
+        if (squery.exec())
+        {
+            while (squery.next())
+            {
+                QVariant lastValue = squery.value(0);
+                return (newValue == lastValue);
+            }
+        }
+    }
+    return false;
+}
+
+/**
  * @brief Called when a MQTT message is received.
  *
  * Inserts the received message in the QSqlDatabase, with current timestamp as ts,
@@ -187,24 +224,86 @@ void MqttSubscriber::onConnectionError(QMqttClient::ClientError error)
  */
 void MqttSubscriber::handleMessage(const QMqttMessage &msg)
 {
+    const MqttTopicConfig config = sender()->property("config").value<MqttTopicConfig>();
     QTextStream(stdout) << "Message received. Topic: " << msg.topic().name() << ", Message: " << msg.payload() << Qt::endl;
+    QJsonParseError jerror;
+    QJsonDocument doc = QJsonDocument::fromJson(msg.payload(), &jerror);
+    if (jerror.error != QJsonParseError::NoError)
+    {
+        QTextStream(stderr) << "Error while parsing payload: " << jerror.errorString() << Qt::endl;
+        return;
+    }
+    QtJsonPath jp(doc);
+    QVariant v = jp.getValue(config.jsonquery);
+    if (v.isNull())
+    {
+        QTextStream(stderr) << "Error: can not extract value with JSONPath: " << config.jsonquery << Qt::endl;
+        return;
+    }
+
     QSqlDatabase db = QSqlDatabase::database();
     if (db.isValid() && db.isOpen())
     {
         QSqlQuery query;
-        if (query.prepare("INSERT INTO mqtt (ts, topic, data) VALUES (:ts, :topic, :data);"))
+        if (v.convert(config.type))
         {
-            query.bindValue(":ts", QDateTime::currentDateTime());
-            query.bindValue(":topic", msg.topic().name());
-            query.bindValue(":data", QString::fromUtf8(msg.payload()));
-            if (!query.exec())
+            bool skip = true;
+            bool prepared = false;
+            if (config.type == QVariant::Bool)
             {
-                QTextStream(stderr) << "SQL error: can not execute statement: " << query.lastError().text() << Qt::endl;
+                if (compareToPreviousValue("mqtt_bool", config.group, config.name, v))
+                {
+                    skip = false;
+                    prepared = query.prepare("INSERT INTO mqtt_bool (ts, group, name, value) VALUES (:ts, :group, :name, :value);");
+                }
             }
-        }
-        else
-        {
-            QTextStream(stderr) << "SQL error: can not prepare statement: " << query.lastError().text() << Qt::endl;
+            else if (config.type == QVariant::Int)
+            {
+                if (compareToPreviousValue("mqtt_integer", config.group, config.name, v))
+                {
+                    skip = false;
+                    prepared = query.prepare("INSERT INTO mqtt_integer (ts, group, name, value) VALUES (:ts, :group, :name, :value);");
+                }
+            }
+            else if (config.type == QVariant::Double)
+            {
+                if (compareToPreviousValue("mqtt_double", config.group, config.name, v))
+                {
+                    skip = false;
+                    prepared = query.prepare("INSERT INTO mqtt_double (ts, group, name, value) VALUES (:ts, :group, :name, :value);");
+                }
+            }
+            else if (config.type == QVariant::String)
+            {
+                if (compareToPreviousValue("mqtt_string", config.group, config.name, v))
+                {
+                    skip = false;
+                    prepared = query.prepare("INSERT INTO mqtt_string (ts, group, name, value) VALUES (:ts, :group, :name, :value);");
+                }
+            }
+
+            if (skip)
+            {
+                QTextStream(stdout) << "Skipping value, as it has not changed." << Qt::endl;
+                return;
+            }
+
+            if (prepared)
+            {
+                query.bindValue(":ts", QDateTime::currentDateTime());
+                query.bindValue(":group", config.group);
+                query.bindValue(":name", config.name);
+                query.bindValue(":value", v);
+
+                if (!query.exec())
+                {
+                    QTextStream(stderr) << "SQL error: can not execute statement: " << query.lastError().text() << Qt::endl;
+                }
+            }
+            else
+            {
+                QTextStream(stderr) << "SQL error: can not prepare statement: " << query.lastError().text() << Qt::endl;
+            }
         }
     }
     else
