@@ -19,6 +19,10 @@
 
 #include "mqtt2sqlconfig.h"
 
+#include <QSqlDatabase>
+#include <QSqlQuery>
+#include <QSqlError>
+
 Mqtt2SqlConfig::Mqtt2SqlConfig()
     : m_settings(nullptr)
 {}
@@ -68,28 +72,43 @@ bool Mqtt2SqlConfig::parse(const QString &configFile)
     }
     m_mqttUseTls = m_settings->value("usetls", false).toBool();
 
-    QStringList groups = m_settings->childGroups();
-    for (const QString & group : groups)
+    QSqlDatabase db = QSqlDatabase::addDatabase("QPSQL");
+    db.setHostName(sqlHostname());
+    db.setDatabaseName(sqlDatabase());
+    db.setPort(sqlPort());
+    db.setUserName(sqlUsername());
+    db.setPassword(sqlPassword());
+    if (db.open())
     {
-        m_settings->beginGroup(group);
-        MqttTopicConfig c;
-        c.topic = m_settings->value("topic").toString();
-        c.jsonquery = m_settings->value("jsonquery").toString();
-        c.type = QVariant::nameToType(m_settings->value("type").toString().toStdString().c_str());
-        c.scale = std::numeric_limits<float>::quiet_NaN();
-        bool ok;
-        float tmp = m_settings->value("scale").toFloat(&ok);
-        if (ok)
+        QSqlQuery query;
+        if (!query.exec("CREATE TABLE IF NOT EXISTS mqtt_config (groupname varchar(100), sensor varchar(100), topic varchar(100), jsonpath varchar(100), datatype varchar(10), scaling real, unit varchar(10), lastdata text);"))
         {
-            c.scale = tmp;
+            QTextStream(stderr) << "Error while creating mqtt_config table: " << query.lastError().text() << Qt::endl;
         }
-        c.group = m_settings->value("group").toString();
-        c.name = m_settings->value("name").toString();
-        m_mqttTopicConfig.append(c);
 
-        m_settings->endGroup();
+        if (query.exec("SELECT groupname, sensor, topic, jsonpath, datatype FROM mqtt_config"))
+        {
+            while (query.next())
+            {
+                MqttTopicConfig c;
+                c.groupname = query.value(0).toString();
+                c.sensor = query.value(1).toString();
+                c.topic = query.value(2).toString();
+                c.jsonpath = query.value(3).toString();
+                c.type = QVariant::nameToType(query.value(4).toString().toStdString().c_str());
+                m_mqttTopicConfig.append(c);
+            }
+        }
+        else
+        {
+            QTextStream(stderr) << "Error while getting config from mqtt_config table: " << query.lastError().text() << Qt::endl;
+        }
     }
-    m_settings->endGroup();
+    else
+    {
+        QTextStream(stderr) << "Error: Faild to open database: " << db.lastError().text() << Qt::endl;
+        ::exit(2);
+    }
 
     return true;
 }
