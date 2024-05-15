@@ -118,21 +118,79 @@ MqttSubscriber::MqttSubscriber(const Mqtt2SqlConfig & config, QObject *parent)
     db.setPassword(config.sqlPassword());
     if (db.open())
     {
-        QSqlQuery query("CREATE TABLE IF NOT EXISTS mqtt (ts timestamp with time zone, topic varchar(255), data jsonb);");
-        if (!query.exec())
         {
-            QTextStream(stderr) << "Error while creating mqtt table: " << query.lastError().text() << Qt::endl;
+            QSqlQuery query("CREATE TABLE IF NOT EXISTS mqtt_string (ts timestamp with time zone, group varchar(50), name varchar(50), value text);");
+            if (!query.exec())
+            {
+                QTextStream(stderr) << "Error while creating mqtt_string table: " << query.lastError().text() << Qt::endl;
+            }
+            QSqlQuery query2("CREATE INDEX mqtt_string_group_name_idx ON mqtt_string (group, name DESC);");
+            if (!query2.exec())
+            {
+                QTextStream(stderr) << "Error while creating index: " << query2.lastError().text() << Qt::endl;
+            }
+            QSqlQuery query3("CREATE INDEX mqtt_string_ts_idx ON mqtt_string (ts DESC);");
+            if (!query3.exec())
+            {
+                QTextStream(stderr) << "Error while creating index: " << query3.lastError().text() << Qt::endl;
+            }
         }
-        QSqlQuery query2("CREATE INDEX mqtt_topic_idx ON mqtt (topic DESC);");
-        if (!query2.exec())
         {
-            QTextStream(stderr) << "Error while creating index: " << query2.lastError().text() << Qt::endl;
+            QSqlQuery query3("CREATE TABLE IF NOT EXISTS mqtt_bool (ts timestamp with time zone, group varchar(50), name varchar(50), value boolean);");
+            if (!query3.exec())
+            {
+                QTextStream(stderr) << "Error while creating mqtt_bool table: " << query3.lastError().text() << Qt::endl;
+            }
+            QSqlQuery query4("CREATE INDEX mqtt_bool_group_name_idx ON mqtt_bool (group, name DESC);");
+            if (!query4.exec())
+            {
+                QTextStream(stderr) << "Error while creating index: " << query4.lastError().text() << Qt::endl;
+            }
+            QSqlQuery query5("CREATE INDEX mqtt_bool_ts_idx ON mqtt_bool (ts DESC);");
+            if (!query5.exec())
+            {
+                QTextStream(stderr) << "Error while creating index: " << query5.lastError().text() << Qt::endl;
+            }
+        }
+        {
+            QSqlQuery query5("CREATE TABLE IF NOT EXISTS mqtt_integer (ts timestamp with time zone, group varchar(50), name varchar(50), value integer);");
+            if (!query5.exec())
+            {
+                QTextStream(stderr) << "Error while creating mqtt_integer table: " << query5.lastError().text() << Qt::endl;
+            }
+            QSqlQuery query6("CREATE INDEX mqtt_integer_group_name_idx ON mqtt_integer (group, name DESC);");
+            if (!query6.exec())
+            {
+                QTextStream(stderr) << "Error while creating index: " << query6.lastError().text() << Qt::endl;
+            }
+            QSqlQuery query3("CREATE INDEX mqtt_integer_ts_idx ON mqtt_integer (ts DESC);");
+            if (!query3.exec())
+            {
+                QTextStream(stderr) << "Error while creating index: " << query3.lastError().text() << Qt::endl;
+            }
+        }
+        {
+            QSqlQuery query7("CREATE TABLE IF NOT EXISTS mqtt_double (ts timestamp with time zone, group varchar(50), name varchar(50), value real);");
+            if (!query7.exec())
+            {
+                QTextStream(stderr) << "Error while creating mqtt_double table: " << query7.lastError().text() << Qt::endl;
+            }
+            QSqlQuery query8("CREATE INDEX mqtt_double_group_name_idx ON mqtt_double (group, name DESC);");
+            if (!query8.exec())
+            {
+                QTextStream(stderr) << "Error while creating index: " << query8.lastError().text() << Qt::endl;
+            }
+            QSqlQuery query3("CREATE INDEX mqtt_double_ts_idx ON mqtt_double (ts DESC);");
+            if (!query3.exec())
+            {
+                QTextStream(stderr) << "Error while creating index: " << query3.lastError().text() << Qt::endl;
+            }
         }
     }
     else
     {
         QTextStream(stderr) << "Error: Faild to open database: " << db.lastError().text() << Qt::endl;
-        emit errorOccured(db.lastError().text(), 2);
+        ::exit(2);
     }
 
     m_cleanupTimer.setInterval(60*60*1000);
@@ -317,26 +375,26 @@ void MqttSubscriber::handleMessage(const QMqttMessage &msg)
  */
 void MqttSubscriber::cleanup()
 {
-    QTextStream(stdout) << "Cleaning up SQL database." << Qt::endl;
-    QSqlDatabase db = QSqlDatabase::database();
-    if (db.isValid() && db.isOpen())
-    {
-        QSqlQuery query;
-        if (query.prepare("DELETE FROM mqtt WHERE ts < :ts;"))
-        {
-            query.bindValue(":ts", QDateTime::currentDateTime().addSecs(m_config.sqlMaxStroageTime().count()*60*60*-1));
-            if (!query.exec())
-            {
-                QTextStream(stderr) << "SQL error: can not execute statement: " << query.lastError().text() << Qt::endl;
-            }
-        }
-        else
-        {
-            QTextStream(stderr) << "SQL error: can not prepare statement: " << query.lastError().text() << Qt::endl;
-        }
-    }
-    else
-    {
-        QTextStream(stderr) << "SQL error: Database not open!" << Qt::endl;
-    }
+//    QTextStream(stdout) << "Cleaning up SQL database." << Qt::endl;
+//    QSqlDatabase db = QSqlDatabase::database();
+//    if (db.isValid() && db.isOpen())
+//    {
+//        QSqlQuery query;
+//        if (query.prepare("DELETE FROM mqtt WHERE ts < :ts;"))
+//        {
+//            query.bindValue(":ts", QDateTime::currentDateTime().addSecs(m_config.sqlMaxStroageTime().count()*60*60*-1));
+//            if (!query.exec())
+//            {
+//                QTextStream(stderr) << "SQL error: can not execute statement: " << query.lastError().text() << Qt::endl;
+//            }
+//        }
+//        else
+//        {
+//            QTextStream(stderr) << "SQL error: can not prepare statement: " << query.lastError().text() << Qt::endl;
+//        }
+//    }
+//    else
+//    {
+//        QTextStream(stderr) << "SQL error: Database not open!" << Qt::endl;
+//    }
 }
