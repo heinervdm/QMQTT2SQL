@@ -261,7 +261,14 @@ bool MqttSubscriber::compareToPreviousValue(const QString & table, const QString
             while (squery.next())
             {
                 QVariant lastValue = squery.value(0);
-                return (newValue == lastValue);
+                if (newValue.type() == QVariant::Double)
+                {
+                    return qFuzzyCompare(newValue.toFloat(),lastValue.toFloat());
+                }
+                else
+                {
+                    return (newValue == lastValue);
+                }
             }
 //        }
 //        else
