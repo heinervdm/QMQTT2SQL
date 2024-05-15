@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
     QCommandLineOption versionOption({"v", "version"}, "Show version and exit.");
     parser.addOption(versionOption);
     QCommandLineOption configOption({"c", "config"}, "Path to the config file.", "config",
-                                    QString("%1/%2").arg(QCoreApplication::applicationDirPath(), "qdeconz2mqtt.ini"));
+                                    QString("%1/%2").arg(QCoreApplication::applicationDirPath(), "qmqtt2sql.ini"));
     parser.addOption(configOption);
 
     parser.process(a);

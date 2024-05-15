@@ -119,71 +119,63 @@ MqttSubscriber::MqttSubscriber(const Mqtt2SqlConfig & config, QObject *parent)
     if (db.open())
     {
         {
-            QSqlQuery query("CREATE TABLE IF NOT EXISTS mqtt_string (ts timestamp with time zone, group varchar(50), name varchar(50), value text);");
-            if (!query.exec())
+            QSqlQuery query;
+            if (!query.exec("CREATE TABLE IF NOT EXISTS mqtt_string (ts timestamp with time zone, groupe varchar(50), name varchar(50), value text)"))
             {
                 QTextStream(stderr) << "Error while creating mqtt_string table: " << query.lastError().text() << Qt::endl;
             }
-            QSqlQuery query2("CREATE INDEX mqtt_string_group_name_idx ON mqtt_string (group, name DESC);");
-            if (!query2.exec())
+            if (!query.exec("CREATE INDEX IF NOT EXISTS mqtt_string_groupe_name_idx ON mqtt_string (groupe, name)"))
             {
-                QTextStream(stderr) << "Error while creating index: " << query2.lastError().text() << Qt::endl;
+                QTextStream(stderr) << "Error while creating index: " << query.lastError().text() << Qt::endl;
             }
-            QSqlQuery query3("CREATE INDEX mqtt_string_ts_idx ON mqtt_string (ts DESC);");
-            if (!query3.exec())
+            if (!query.exec("CREATE INDEX IF NOT EXISTS mqtt_string_ts_idx ON mqtt_string (ts)"))
             {
-                QTextStream(stderr) << "Error while creating index: " << query3.lastError().text() << Qt::endl;
+                QTextStream(stderr) << "Error while creating index: " << query.lastError().text() << Qt::endl;
             }
         }
         {
-            QSqlQuery query3("CREATE TABLE IF NOT EXISTS mqtt_bool (ts timestamp with time zone, group varchar(50), name varchar(50), value boolean);");
-            if (!query3.exec())
+            QSqlQuery query;
+            if (!query.exec("CREATE TABLE IF NOT EXISTS mqtt_bool (ts timestamp with time zone, groupe varchar(50), name varchar(50), value boolean);"))
             {
-                QTextStream(stderr) << "Error while creating mqtt_bool table: " << query3.lastError().text() << Qt::endl;
+                QTextStream(stderr) << "Error while creating mqtt_bool table: " << query.lastError().text() << Qt::endl;
             }
-            QSqlQuery query4("CREATE INDEX mqtt_bool_group_name_idx ON mqtt_bool (group, name DESC);");
-            if (!query4.exec())
+            if (!query.exec("CREATE INDEX IF NOT EXISTS mqtt_bool_groupe_name_idx ON mqtt_bool (groupe, name);"))
             {
-                QTextStream(stderr) << "Error while creating index: " << query4.lastError().text() << Qt::endl;
+                QTextStream(stderr) << "Error while creating index: " << query.lastError().text() << Qt::endl;
             }
-            QSqlQuery query5("CREATE INDEX mqtt_bool_ts_idx ON mqtt_bool (ts DESC);");
-            if (!query5.exec())
+            if (!query.exec("CREATE INDEX IF NOT EXISTS mqtt_bool_ts_idx ON mqtt_bool (ts);"))
             {
-                QTextStream(stderr) << "Error while creating index: " << query5.lastError().text() << Qt::endl;
+                QTextStream(stderr) << "Error while creating index: " << query.lastError().text() << Qt::endl;
             }
         }
         {
-            QSqlQuery query5("CREATE TABLE IF NOT EXISTS mqtt_integer (ts timestamp with time zone, group varchar(50), name varchar(50), value integer);");
-            if (!query5.exec())
+            QSqlQuery query;
+            if (!query.exec("CREATE TABLE IF NOT EXISTS mqtt_integer (ts timestamp with time zone, groupe varchar(50), name varchar(50), value integer);"))
             {
-                QTextStream(stderr) << "Error while creating mqtt_integer table: " << query5.lastError().text() << Qt::endl;
+                QTextStream(stderr) << "Error while creating mqtt_integer table: " << query.lastError().text() << Qt::endl;
             }
-            QSqlQuery query6("CREATE INDEX mqtt_integer_group_name_idx ON mqtt_integer (group, name DESC);");
-            if (!query6.exec())
+            if (!query.exec("CREATE INDEX IF NOT EXISTS mqtt_integer_groupe_name_idx ON mqtt_integer (groupe, name);"))
             {
-                QTextStream(stderr) << "Error while creating index: " << query6.lastError().text() << Qt::endl;
+                QTextStream(stderr) << "Error while creating index: " << query.lastError().text() << Qt::endl;
             }
-            QSqlQuery query3("CREATE INDEX mqtt_integer_ts_idx ON mqtt_integer (ts DESC);");
-            if (!query3.exec())
+            if (!query.exec("CREATE INDEX IF NOT EXISTS mqtt_integer_ts_idx ON mqtt_integer (ts);"))
             {
-                QTextStream(stderr) << "Error while creating index: " << query3.lastError().text() << Qt::endl;
+                QTextStream(stderr) << "Error while creating index: " << query.lastError().text() << Qt::endl;
             }
         }
         {
-            QSqlQuery query7("CREATE TABLE IF NOT EXISTS mqtt_double (ts timestamp with time zone, group varchar(50), name varchar(50), value real);");
-            if (!query7.exec())
+            QSqlQuery query;
+            if (!query.exec("CREATE TABLE IF NOT EXISTS mqtt_double (ts timestamp with time zone, groupe varchar(50), name varchar(50), value real);"))
             {
-                QTextStream(stderr) << "Error while creating mqtt_double table: " << query7.lastError().text() << Qt::endl;
+                QTextStream(stderr) << "Error while creating mqtt_double table: " << query.lastError().text() << Qt::endl;
             }
-            QSqlQuery query8("CREATE INDEX mqtt_double_group_name_idx ON mqtt_double (group, name DESC);");
-            if (!query8.exec())
+            if (!query.exec("CREATE INDEX IF NOT EXISTS mqtt_double_groupe_name_idx ON mqtt_double (groupe, name);"))
             {
-                QTextStream(stderr) << "Error while creating index: " << query8.lastError().text() << Qt::endl;
+                QTextStream(stderr) << "Error while creating index: " << query.lastError().text() << Qt::endl;
             }
-            QSqlQuery query3("CREATE INDEX mqtt_double_ts_idx ON mqtt_double (ts DESC);");
-            if (!query3.exec())
+            if (!query.exec("CREATE INDEX IF NOT EXISTS mqtt_double_ts_idx ON mqtt_double (ts);"))
             {
-                QTextStream(stderr) << "Error while creating index: " << query3.lastError().text() << Qt::endl;
+                QTextStream(stderr) << "Error while creating index: " << query.lastError().text() << Qt::endl;
             }
         }
     }
@@ -217,6 +209,7 @@ void MqttSubscriber::subscribe()
         }
         else
         {
+            QTextStream(stdout) << "Subscribed to " << topic.filter() << Qt::endl;
             connect(subscription, &QMqttSubscription::stateChanged, this,
                     [topic](QMqttSubscription::SubscriptionState s) {
                 QTextStream(stdout) << "Subscription state changed [topic " << topic.filter() << "]: " << qMqttSubscriptionState(s) << Qt::endl;
@@ -249,7 +242,7 @@ void MqttSubscriber::onConnectionError(QMqttClient::ClientError error)
 /**
  * @brief Compare a value to the lastest one for the given group and name
  * @param table Table to look for the given group and name
- * @param group Group to look up
+ * @param group group to look up
  * @param name Name to look up in the given group
  * @param newValue New value to compare with
  * @return True if the values are identical, false otherwise
@@ -257,19 +250,28 @@ void MqttSubscriber::onConnectionError(QMqttClient::ClientError error)
 bool MqttSubscriber::compareToPreviousValue(const QString & table, const QString & group, const QString & name, const QVariant & newValue)
 {
     QSqlQuery squery;
-    squery.setForwardOnly(true);
-    if (squery.prepare("SELECT value FROM " + table + " WHERE group=:group AND name=:name ORDER BY ts DESC LIMIT 1"))
+//    squery.setForwardOnly(true);
+    if (squery.exec("SELECT value FROM " + table + " WHERE groupe='"+group+"' AND name='"+name+"' ORDER BY ts DESC LIMIT 1;"))
     {
-        squery.bindValue(":group", group);
-        squery.bindValue(":name", name);
-        if (squery.exec())
-        {
+//        squery.bindValue(":table", table);
+//        squery.bindValue(":groupe", group);
+//        squery.bindValue(":name", name);
+//        if (squery.exec())
+//        {
             while (squery.next())
             {
                 QVariant lastValue = squery.value(0);
                 return (newValue == lastValue);
             }
-        }
+//        }
+//        else
+//        {
+//            QTextStream(stderr) << "Error: Failed to execute statement: " << squery.lastError().text() << Qt::endl;
+//        }
+    }
+    else
+    {
+        QTextStream(stderr) << "Error: Failed to prepare statement: " << squery.lastError().text() << Qt::endl;
     }
     return false;
 }
@@ -307,36 +309,37 @@ void MqttSubscriber::handleMessage(const QMqttMessage &msg)
         {
             bool skip = true;
             bool prepared = false;
-            if (config.type == QVariant::Bool)
+
+            if (config.type == QVariant::Double)
             {
-                if (compareToPreviousValue("mqtt_bool", config.group, config.name, v))
+                if (!compareToPreviousValue("mqtt_double", config.group, config.name, v))
                 {
                     skip = false;
-                    prepared = query.prepare("INSERT INTO mqtt_bool (ts, group, name, value) VALUES (:ts, :group, :name, :value);");
+                    prepared = query.prepare("INSERT INTO mqtt_double (ts, groupe, name, value) VALUES (:ts, :groupe, :name, :value);");
+                }
+            }
+            else if (config.type == QVariant::Bool)
+            {
+                if (!compareToPreviousValue("mqtt_bool", config.group, config.name, v))
+                {
+                    skip = false;
+                    prepared = query.prepare("INSERT INTO mqtt_bool (ts, groupe, name, value) VALUES (:ts, :groupe, :name, :value);");
                 }
             }
             else if (config.type == QVariant::Int)
             {
-                if (compareToPreviousValue("mqtt_integer", config.group, config.name, v))
+                if (!compareToPreviousValue("mqtt_integer", config.group, config.name, v))
                 {
                     skip = false;
-                    prepared = query.prepare("INSERT INTO mqtt_integer (ts, group, name, value) VALUES (:ts, :group, :name, :value);");
-                }
-            }
-            else if (config.type == QVariant::Double)
-            {
-                if (compareToPreviousValue("mqtt_double", config.group, config.name, v))
-                {
-                    skip = false;
-                    prepared = query.prepare("INSERT INTO mqtt_double (ts, group, name, value) VALUES (:ts, :group, :name, :value);");
+                    prepared = query.prepare("INSERT INTO mqtt_integer (ts, groupe, name, value) VALUES (:ts, :groupe, :name, :value);");
                 }
             }
             else if (config.type == QVariant::String)
             {
-                if (compareToPreviousValue("mqtt_string", config.group, config.name, v))
+                if (!compareToPreviousValue("mqtt_string", config.group, config.name, v))
                 {
                     skip = false;
-                    prepared = query.prepare("INSERT INTO mqtt_string (ts, group, name, value) VALUES (:ts, :group, :name, :value);");
+                    prepared = query.prepare("INSERT INTO mqtt_string (ts, groupe, name, value) VALUES (:ts, :groupe, :name, :value);");
                 }
             }
 
@@ -349,7 +352,7 @@ void MqttSubscriber::handleMessage(const QMqttMessage &msg)
             if (prepared)
             {
                 query.bindValue(":ts", QDateTime::currentDateTime());
-                query.bindValue(":group", config.group);
+                query.bindValue(":groupe", config.group);
                 query.bindValue(":name", config.name);
                 query.bindValue(":value", v);
 

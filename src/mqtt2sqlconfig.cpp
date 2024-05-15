@@ -85,6 +85,7 @@ bool Mqtt2SqlConfig::parse(const QString &configFile)
         }
         c.group = m_settings->value("group").toString();
         c.name = m_settings->value("name").toString();
+        m_mqttTopicConfig.append(c);
 
         m_settings->endGroup();
     }
