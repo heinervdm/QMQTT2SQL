@@ -42,7 +42,11 @@ private slots:
     void subscribe();
     void onConnectionError(QMqttClient::ClientError error);
     void handleMessage(const QMqttMessage &msg);
+    void handleAnyMessage(const QMqttMessage &msg);
     void cleanup();
+
+private:
+    bool compareToPreviousValue(const QString &table, int sensorId, const QVariant &newValue);
 
 private:
     QMqttClient m_client;
@@ -50,8 +54,6 @@ private:
     QTimer m_cleanupTimer;
     Mqtt2SqlConfig m_config;
     QList<QMqttSubscription*> m_subscriptions;
-
-    bool compareToPreviousValue(const QString &table, const QString &group, const QString &name, const QVariant &newValue);
 };
 
 #endif // MQTTSUBSCRIBER_H

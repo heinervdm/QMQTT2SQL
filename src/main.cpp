@@ -20,6 +20,7 @@
 #include <QCoreApplication>
 #include <QCommandLineParser>
 #include <QCommandLineOption>
+#include <QSqlDatabase>
 
 #include "mqtt2sqlconfig.h"
 #include "mqttsubscriber.h"
@@ -64,6 +65,8 @@ int main(int argc, char *argv[])
     {
         parser.showHelp();
     }
+
+    QSqlDatabase::addDatabase("QPSQL");
 
     QString configFile = parser.value("config");
     Mqtt2SqlConfig config;

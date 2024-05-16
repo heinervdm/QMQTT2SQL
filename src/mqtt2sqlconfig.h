@@ -26,11 +26,10 @@
 
 struct MqttTopicConfig
 {
+    int sensorId;
     QString topic;
     QString jsonpath;
     QVariant::Type type;
-    QString groupname;
-    QString sensor;
 };
 
 Q_DECLARE_METATYPE(MqttTopicConfig)

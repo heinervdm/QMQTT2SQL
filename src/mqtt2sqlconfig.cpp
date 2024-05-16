@@ -72,7 +72,7 @@ bool Mqtt2SqlConfig::parse(const QString &configFile)
     }
     m_mqttUseTls = m_settings->value("usetls", false).toBool();
 
-    QSqlDatabase db = QSqlDatabase::addDatabase("QPSQL");
+    QSqlDatabase db = QSqlDatabase::database();
     db.setHostName(sqlHostname());
     db.setDatabaseName(sqlDatabase());
     db.setPort(sqlPort());
@@ -81,21 +81,20 @@ bool Mqtt2SqlConfig::parse(const QString &configFile)
     if (db.open())
     {
         QSqlQuery query;
-        if (!query.exec("CREATE TABLE IF NOT EXISTS mqtt_config (groupname varchar(100), sensor varchar(100), topic varchar(100), jsonpath varchar(100), datatype varchar(10), scaling real, unit varchar(10), lastdata text);"))
+        if (!query.exec("CREATE TABLE IF NOT EXISTS mqtt_config (sensorId integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY, groupname varchar(100), sensor varchar(100), topic varchar(100), jsonpath varchar(100), datatype varchar(10), scaling real, unit varchar(10), lastdata text);"))
         {
             QTextStream(stderr) << "Error while creating mqtt_config table: " << query.lastError().text() << Qt::endl;
         }
 
-        if (query.exec("SELECT groupname, sensor, topic, jsonpath, datatype FROM mqtt_config"))
+        if (query.exec("SELECT sensorId, topic, jsonpath, datatype FROM mqtt_config"))
         {
             while (query.next())
             {
                 MqttTopicConfig c;
-                c.groupname = query.value(0).toString();
-                c.sensor = query.value(1).toString();
-                c.topic = query.value(2).toString();
-                c.jsonpath = query.value(3).toString();
-                c.type = QVariant::nameToType(query.value(4).toString().toStdString().c_str());
+                c.sensorId = query.value(0).toInt();
+                c.topic = query.value(1).toString();
+                c.jsonpath = query.value(2).toString();
+                c.type = QVariant::nameToType(query.value(3).toString().toStdString().c_str());
                 m_mqttTopicConfig.append(c);
             }
         }
