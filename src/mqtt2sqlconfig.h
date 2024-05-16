@@ -56,6 +56,7 @@ public:
     const QString & sqlUsername() const { return m_sqlUsername; }
     const QString & sqlPassword() const { return m_sqlPassword; }
     const QString & sqlDatabase() const { return m_sqlDatabase; }
+    const QString & sqlTablePrefix() const { return m_sqlTablePrefix; }
     std::chrono::hours sqlMaxStroageTime() const { return m_sqlMaxStorageTime; }
 
 private:
@@ -74,6 +75,7 @@ private:
     QString m_sqlUsername;
     QString m_sqlPassword;
     QString m_sqlDatabase;
+    QString m_sqlTablePrefix;
     std::chrono::hours m_sqlMaxStorageTime;
 };
 

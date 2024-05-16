@@ -37,6 +37,7 @@ bool Mqtt2SqlConfig::parse(const QString &configFile)
     m_sqlUsername = m_settings->value("username").toString();
     m_sqlPassword = m_settings->value("password").toString();
     m_sqlDatabase = m_settings->value("database").toString();
+    m_sqlTablePrefix = m_settings->value("prefix", "mqtt").toString();
     m_sqlMaxStorageTime = std::chrono::hours(m_settings->value("maxstoragehours", 7*24).toInt());
     m_settings->endGroup();
 
@@ -81,12 +82,12 @@ bool Mqtt2SqlConfig::parse(const QString &configFile)
     if (db.open())
     {
         QSqlQuery query;
-        if (!query.exec("CREATE TABLE IF NOT EXISTS mqtt_config (sensorId integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY, groupname varchar(100), sensor varchar(100), topic varchar(100), jsonpath varchar(100), datatype varchar(10), scaling real, unit varchar(10), lastdata text);"))
+        if (!query.exec("CREATE TABLE IF NOT EXISTS " + m_sqlTablePrefix + "_config (sensorId integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY, groupname varchar(100), sensor varchar(100), topic varchar(100), jsonpath varchar(100), datatype varchar(10), scaling real, unit varchar(10), lastdata text);"))
         {
-            QTextStream(stderr) << "Error while creating mqtt_config table: " << query.lastError().text() << Qt::endl;
+            QTextStream(stderr) << "Error while creating " + m_sqlTablePrefix + "_config table: " << query.lastError().text() << Qt::endl;
         }
 
-        if (query.exec("SELECT sensorId, topic, jsonpath, datatype FROM mqtt_config"))
+        if (query.exec("SELECT sensorId, topic, jsonpath, datatype FROM " + m_sqlTablePrefix + "_config"))
         {
             while (query.next())
             {
@@ -100,7 +101,7 @@ bool Mqtt2SqlConfig::parse(const QString &configFile)
         }
         else
         {
-            QTextStream(stderr) << "Error while getting config from mqtt_config table: " << query.lastError().text() << Qt::endl;
+            QTextStream(stderr) << "Error while getting config from " + m_sqlTablePrefix + "_config table: " << query.lastError().text() << Qt::endl;
         }
     }
     else

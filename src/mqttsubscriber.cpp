@@ -93,69 +93,69 @@ MqttSubscriber::MqttSubscriber(const Mqtt2SqlConfig & config, QObject *parent)
     {
         {
             QSqlQuery query;
-            if (!query.exec("CREATE TABLE IF NOT EXISTS mqtt_string (stringId integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY, ts timestamp with time zone, sensorId integer, value text)"))
+            if (!query.exec("CREATE TABLE IF NOT EXISTS " + config.sqlTablePrefix() + "_string (stringId integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY, ts timestamp with time zone, sensorId integer, value text)"))
             {
-                QTextStream(stderr) << "Error while creating mqtt_string table: " << query.lastError().text() << Qt::endl;
+                QTextStream(stderr) << "Error while creating " + config.sqlTablePrefix() + "_string table: " << query.lastError().text() << Qt::endl;
             }
-            if (!query.exec("CREATE INDEX IF NOT EXISTS mqtt_string_sensorId_idx ON mqtt_string (sensorId)"))
-            {
-                QTextStream(stderr) << "Error while creating index: " << query.lastError().text() << Qt::endl;
-            }
-            if (!query.exec("CREATE INDEX IF NOT EXISTS mqtt_string_ts_idx ON mqtt_string (ts)"))
+            if (!query.exec("CREATE INDEX IF NOT EXISTS " + config.sqlTablePrefix() + "_string_sensorId_idx ON " + config.sqlTablePrefix() + "_string (sensorId)"))
             {
                 QTextStream(stderr) << "Error while creating index: " << query.lastError().text() << Qt::endl;
             }
-        }
-        {
-            QSqlQuery query;
-            if (!query.exec("CREATE TABLE IF NOT EXISTS mqtt_bool (boolId integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY, ts timestamp with time zone, sensorId integer, value boolean);"))
-            {
-                QTextStream(stderr) << "Error while creating mqtt_bool table: " << query.lastError().text() << Qt::endl;
-            }
-            if (!query.exec("CREATE INDEX IF NOT EXISTS mqtt_bool_sensorId_idx ON mqtt_bool (sensorId);"))
-            {
-                QTextStream(stderr) << "Error while creating index: " << query.lastError().text() << Qt::endl;
-            }
-            if (!query.exec("CREATE INDEX IF NOT EXISTS mqtt_bool_ts_idx ON mqtt_bool (ts);"))
+            if (!query.exec("CREATE INDEX IF NOT EXISTS " + config.sqlTablePrefix() + "_string_ts_idx ON " + config.sqlTablePrefix() + "_string (ts)"))
             {
                 QTextStream(stderr) << "Error while creating index: " << query.lastError().text() << Qt::endl;
             }
         }
         {
             QSqlQuery query;
-            if (!query.exec("CREATE TABLE IF NOT EXISTS mqtt_integer (integerId integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY, ts timestamp with time zone, sensorId integer, value integer);"))
+            if (!query.exec("CREATE TABLE IF NOT EXISTS " + config.sqlTablePrefix() + "_bool (boolId integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY, ts timestamp with time zone, sensorId integer, value boolean);"))
             {
-                QTextStream(stderr) << "Error while creating mqtt_integer table: " << query.lastError().text() << Qt::endl;
+                QTextStream(stderr) << "Error while creating " + config.sqlTablePrefix() + "_bool table: " << query.lastError().text() << Qt::endl;
             }
-            if (!query.exec("CREATE INDEX IF NOT EXISTS mqtt_integer_sensorId_idx ON mqtt_integer (sensorId);"))
-            {
-                QTextStream(stderr) << "Error while creating index: " << query.lastError().text() << Qt::endl;
-            }
-            if (!query.exec("CREATE INDEX IF NOT EXISTS mqtt_integer_ts_idx ON mqtt_integer (ts);"))
+            if (!query.exec("CREATE INDEX IF NOT EXISTS " + config.sqlTablePrefix() + "_bool_sensorId_idx ON " + config.sqlTablePrefix() + "_bool (sensorId);"))
             {
                 QTextStream(stderr) << "Error while creating index: " << query.lastError().text() << Qt::endl;
             }
-        }
-        {
-            QSqlQuery query;
-            if (!query.exec("CREATE TABLE IF NOT EXISTS mqtt_double (doubleId integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY, ts timestamp with time zone, sensorId integer, value real);"))
-            {
-                QTextStream(stderr) << "Error while creating mqtt_double table: " << query.lastError().text() << Qt::endl;
-            }
-            if (!query.exec("CREATE INDEX IF NOT EXISTS mqtt_double_sensorId_idx ON mqtt_double (sensorId);"))
-            {
-                QTextStream(stderr) << "Error while creating index: " << query.lastError().text() << Qt::endl;
-            }
-            if (!query.exec("CREATE INDEX IF NOT EXISTS mqtt_double_ts_idx ON mqtt_double (ts);"))
+            if (!query.exec("CREATE INDEX IF NOT EXISTS " + config.sqlTablePrefix() + "_bool_ts_idx ON " + config.sqlTablePrefix() + "_bool (ts);"))
             {
                 QTextStream(stderr) << "Error while creating index: " << query.lastError().text() << Qt::endl;
             }
         }
         {
             QSqlQuery query;
-            if (!query.exec("CREATE TABLE IF NOT EXISTS mqtt_sensors_seen (lastseen timestamp with time zone, topic varchar(255) PRIMARY KEY, data jsonb)"))
+            if (!query.exec("CREATE TABLE IF NOT EXISTS " + config.sqlTablePrefix() + "_integer (integerId integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY, ts timestamp with time zone, sensorId integer, value integer);"))
             {
-                QTextStream(stderr) << "Error while creating mqtt_sensors_seen table: " << query.lastError().text() << Qt::endl;
+                QTextStream(stderr) << "Error while creating " + config.sqlTablePrefix() + "_integer table: " << query.lastError().text() << Qt::endl;
+            }
+            if (!query.exec("CREATE INDEX IF NOT EXISTS " + config.sqlTablePrefix() + "_integer_sensorId_idx ON " + config.sqlTablePrefix() + "_integer (sensorId);"))
+            {
+                QTextStream(stderr) << "Error while creating index: " << query.lastError().text() << Qt::endl;
+            }
+            if (!query.exec("CREATE INDEX IF NOT EXISTS " + config.sqlTablePrefix() + "_integer_ts_idx ON " + config.sqlTablePrefix() + "_integer (ts);"))
+            {
+                QTextStream(stderr) << "Error while creating index: " << query.lastError().text() << Qt::endl;
+            }
+        }
+        {
+            QSqlQuery query;
+            if (!query.exec("CREATE TABLE IF NOT EXISTS " + config.sqlTablePrefix() + "_double (doubleId integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY, ts timestamp with time zone, sensorId integer, value real);"))
+            {
+                QTextStream(stderr) << "Error while creating " + config.sqlTablePrefix() + "_double table: " << query.lastError().text() << Qt::endl;
+            }
+            if (!query.exec("CREATE INDEX IF NOT EXISTS " + config.sqlTablePrefix() + "_double_sensorId_idx ON " + config.sqlTablePrefix() + "_double (sensorId);"))
+            {
+                QTextStream(stderr) << "Error while creating index: " << query.lastError().text() << Qt::endl;
+            }
+            if (!query.exec("CREATE INDEX IF NOT EXISTS " + config.sqlTablePrefix() + "_double_ts_idx ON " + config.sqlTablePrefix() + "_double (ts);"))
+            {
+                QTextStream(stderr) << "Error while creating index: " << query.lastError().text() << Qt::endl;
+            }
+        }
+        {
+            QSqlQuery query;
+            if (!query.exec("CREATE TABLE IF NOT EXISTS " + config.sqlTablePrefix() + "_sensors_seen (lastseen timestamp with time zone, topic varchar(255) PRIMARY KEY, data jsonb)"))
+            {
+                QTextStream(stderr) << "Error while creating " + config.sqlTablePrefix() + "_sensors_seen table: " << query.lastError().text() << Qt::endl;
             }
         }
     }
@@ -312,7 +312,7 @@ void MqttSubscriber::handleAnyMessage(const QMqttMessage &msg)
     if (db.isValid() && db.isOpen())
     {
         QSqlQuery query;
-        if (query.prepare("INSERT INTO mqtt_sensors_seen (lastseen, topic, data) VALUES (NOW(), :topic, :data) ON CONFLICT (topic) DO UPDATE SET lastseen = NOW(), data = :data;"))
+        if (query.prepare("INSERT INTO " + m_config.sqlTablePrefix() + "_sensors_seen (lastseen, topic, data) VALUES (NOW(), :topic, :data) ON CONFLICT (topic) DO UPDATE SET lastseen = NOW(), data = :data;"))
         {
             query.bindValue(":topic", msg.topic().name());
             query.bindValue(":data", QString::fromUtf8(msg.payload()));
@@ -369,34 +369,34 @@ void MqttSubscriber::handleMessage(const QMqttMessage &msg)
 
             if (config.type == QVariant::Double)
             {
-                if (!compareToPreviousValue("mqtt_double", config.sensorId, v))
+                if (!compareToPreviousValue(m_config.sqlTablePrefix() + "_double", config.sensorId, v))
                 {
                     skip = false;
-                    prepared = query.prepare("INSERT INTO mqtt_double (ts, sensorId, value) VALUES (NOW(), :sensorId, :value);");
+                    prepared = query.prepare("INSERT INTO " + m_config.sqlTablePrefix() + "_double (ts, sensorId, value) VALUES (NOW(), :sensorId, :value);");
                 }
             }
             else if (config.type == QVariant::Bool)
             {
-                if (!compareToPreviousValue("mqtt_bool", config.sensorId, v))
+                if (!compareToPreviousValue(m_config.sqlTablePrefix() + "_bool", config.sensorId, v))
                 {
                     skip = false;
-                    prepared = query.prepare("INSERT INTO mqtt_bool (ts, sensorId, value) VALUES (NOW(), :sensorId, :value);");
+                    prepared = query.prepare("INSERT INTO " + m_config.sqlTablePrefix() + "_bool (ts, sensorId, value) VALUES (NOW(), :sensorId, :value);");
                 }
             }
             else if (config.type == QVariant::Int)
             {
-                if (!compareToPreviousValue("mqtt_integer", config.sensorId, v))
+                if (!compareToPreviousValue(m_config.sqlTablePrefix() + "_integer", config.sensorId, v))
                 {
                     skip = false;
-                    prepared = query.prepare("INSERT INTO mqtt_integer (ts, sensorId, value) VALUES (NOW(), :sensorId, :value);");
+                    prepared = query.prepare("INSERT INTO " + m_config.sqlTablePrefix() + "_integer (ts, sensorId, value) VALUES (NOW(), :sensorId, :value);");
                 }
             }
             else if (config.type == QVariant::String)
             {
-                if (!compareToPreviousValue("mqtt_string", config.sensorId, v))
+                if (!compareToPreviousValue(m_config.sqlTablePrefix() + "_string", config.sensorId, v))
                 {
                     skip = false;
-                    prepared = query.prepare("INSERT INTO mqtt_string (ts, sensorId, value) VALUES (NOW(), :sensorId, :value);");
+                    prepared = query.prepare("INSERT INTO " + m_config.sqlTablePrefix() + "_string (ts, sensorId, value) VALUES (NOW(), :sensorId, :value);");
                 }
             }
 
@@ -432,27 +432,4 @@ void MqttSubscriber::handleMessage(const QMqttMessage &msg)
  * @brief Delete all outdated SQL entires
  */
 void MqttSubscriber::cleanup()
-{
-//    QTextStream(stdout) << "Cleaning up SQL database." << Qt::endl;
-//    QSqlDatabase db = QSqlDatabase::database();
-//    if (db.isValid() && db.isOpen())
-//    {
-//        QSqlQuery query;
-//        if (query.prepare("DELETE FROM mqtt WHERE ts < :ts;"))
-//        {
-//            query.bindValue(":ts", QDateTime::currentDateTime().addSecs(m_config.sqlMaxStroageTime().count()*60*60*-1));
-//            if (!query.exec())
-//            {
-//                QTextStream(stderr) << "SQL error: can not execute statement: " << query.lastError().text() << Qt::endl;
-//            }
-//        }
-//        else
-//        {
-//            QTextStream(stderr) << "SQL error: can not prepare statement: " << query.lastError().text() << Qt::endl;
-//        }
-//    }
-//    else
-//    {
-//        QTextStream(stderr) << "SQL error: Database not open!" << Qt::endl;
-//    }
-}
+{}
