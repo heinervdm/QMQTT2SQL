@@ -204,32 +204,6 @@ MqttSubscriber::MqttSubscriber(const Mqtt2SqlConfig & config, QObject *parent)
 void MqttSubscriber::subscribe()
 {
     QTextStream(stdout) << "MQTT connection established" << Qt::endl;
-
-    const QList<MqttTopicConfig> & configs = m_config.mqttTopicConfig();
-    for (const MqttTopicConfig & c : configs)
-    {
-        QMqttTopicFilter topic(c.topic);
-        QMqttSubscription *subscription = m_client.subscribe(topic);
-        if (!subscription) {
-            QTextStream(stderr) << "Failed to subscribe to " << topic.filter() << Qt::endl;
-            emit errorOccured("Failed to subscribe to " + topic.filter(), 1);
-        }
-        else
-        {
-            QTextStream(stdout) << "Subscribed to " << topic.filter() << Qt::endl;
-            connect(subscription, &QMqttSubscription::stateChanged, this,
-                    [topic](QMqttSubscription::SubscriptionState s) {
-                QTextStream(stdout) << "Subscription state changed [topic " << topic.filter() << "]: " << qMqttSubscriptionState(s) << Qt::endl;
-            });
-
-            connect(subscription, &QMqttSubscription::messageReceived, this,
-                    [this](const QMqttMessage & msg) {
-                handleMessage(msg);
-            });
-            subscription->setProperty("config", QVariant::fromValue(c));
-            m_subscriptions.append(subscription);
-        }
-    }
     {
         QMqttTopicFilter topic("#");
         QMqttSubscription *subscription = m_client.subscribe(topic);
@@ -313,15 +287,37 @@ bool MqttSubscriber::compareToPreviousValue(const QString & table, int sensorId,
  */
 void MqttSubscriber::handleAnyMessage(const QMqttMessage &msg)
 {
-    if (wasTopicSeen(msg.topic().name()))
-    {
-        return;
-    }
-    m_seenTopics.append(msg.topic().name());
+
     QSqlDatabase db = QSqlDatabase::database();
     if (db.isValid() && db.isOpen())
     {
+        MqttTopicConfig c;
         QSqlQuery query;
+        if (query.exec("SELECT sensorId, topic, jsonpath, datatype FROM " + m_config.sqlTablePrefix() + "_config WHERE topic='" + msg.topic().name() + "'"))
+        {
+            while (query.next())
+            {
+                c.sensorId = query.value(0).toInt();
+                c.topic = query.value(1).toString();
+                c.jsonpath = query.value(2).toString();
+                c.type = QVariant::nameToType(query.value(3).toString().toStdString().c_str());
+            }
+        }
+        else
+        {
+            QTextStream(stderr) << "Error while getting config from " + m_config.sqlTablePrefix() + "_config table: " << query.lastError().text() << Qt::endl;
+        }
+        if (c.type != QVariant::Invalid)
+        {
+            handleMessage(msg, c);
+            return;
+        }
+
+        if (wasTopicSeen(msg.topic().name()))
+        {
+            return;
+        }
+
         if (query.prepare("INSERT INTO " + m_config.sqlTablePrefix() + "_sensors_seen (lastseen, topic, data) VALUES (NOW(), :topic, :data) ON CONFLICT (topic) DO UPDATE SET lastseen = NOW(), data = :data;"))
         {
             query.bindValue(":topic", msg.topic().name());
@@ -330,6 +326,11 @@ void MqttSubscriber::handleAnyMessage(const QMqttMessage &msg)
             if (!query.exec())
             {
                 QTextStream(stderr) << "SQL error: can not execute statement: " << query.lastError().text() << Qt::endl;
+            }
+            else
+            {
+
+                m_seenTopics.append(msg.topic().name());
             }
         }
         else
@@ -349,9 +350,8 @@ void MqttSubscriber::handleAnyMessage(const QMqttMessage &msg)
  * Inserts the received message in the QSqlDatabase, with current timestamp as ts,
  * the messages topic as topic and the messages payload as data.
  */
-void MqttSubscriber::handleMessage(const QMqttMessage &msg)
+void MqttSubscriber::handleMessage(const QMqttMessage &msg, const MqttTopicConfig &config)
 {
-    const MqttTopicConfig config = sender()->property("config").value<MqttTopicConfig>();
     QTextStream(stdout) << "Message received. Topic: " << msg.topic().name() << ", Message: " << msg.payload() << Qt::endl;
 
     QVariant v;

@@ -41,7 +41,7 @@ signals:
 private slots:
     void subscribe();
     void onConnectionError(QMqttClient::ClientError error);
-    void handleMessage(const QMqttMessage &msg);
+    void handleMessage(const QMqttMessage &msg, const MqttTopicConfig &config);
     void handleAnyMessage(const QMqttMessage &msg);
     void cleanup();
 
