@@ -153,7 +153,7 @@ MqttSubscriber::MqttSubscriber(const Mqtt2SqlConfig & config, QObject *parent)
         }
         {
             QSqlQuery query;
-            if (!query.exec("CREATE TABLE IF NOT EXISTS " + config.sqlTablePrefix() + "_sensors_seen (lastseen timestamp with time zone, topic varchar(255) PRIMARY KEY, data jsonb)"))
+            if (!query.exec("CREATE TABLE IF NOT EXISTS " + config.sqlTablePrefix() + "_sensors_seen (lastseen timestamp with time zone, topic varchar(255) PRIMARY KEY, data text)"))
             {
                 QTextStream(stderr) << "Error while creating " + config.sqlTablePrefix() + "_sensors_seen table: " << query.lastError().text() << Qt::endl;
             }
