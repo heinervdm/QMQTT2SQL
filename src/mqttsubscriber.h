@@ -47,6 +47,7 @@ private slots:
 
 private:
     bool compareToPreviousValue(const QString &table, int sensorId, const QVariant &newValue);
+    bool wasTopicSeen(const QString & topic) { return m_seenTopics.contains(topic); }
 
 private:
     QMqttClient m_client;
@@ -54,6 +55,8 @@ private:
     QTimer m_cleanupTimer;
     Mqtt2SqlConfig m_config;
     QList<QMqttSubscription*> m_subscriptions;
+    QMap<int,QVariant> m_lastvalues; // sensorId -> Last sensor value
+    QList<QString> m_seenTopics; // List of seen topics
 };
 
 #endif // MQTTSUBSCRIBER_H
