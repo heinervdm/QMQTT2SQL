@@ -307,7 +307,7 @@ void MqttSubscriber::handleAnyMessage(const QMqttMessage &msg)
         {
             QTextStream(stderr) << "Error while getting config from " + m_config.sqlTablePrefix() + "_config table: " << query.lastError().text() << Qt::endl;
         }
-        if (c.type != QVariant::Invalid)
+        if (!c.topic.isEmpty())
         {
             handleMessage(msg, c);
             return;
