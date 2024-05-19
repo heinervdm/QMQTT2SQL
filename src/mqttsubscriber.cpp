@@ -418,6 +418,10 @@ void MqttSubscriber::handleMessage(const QMqttMessage &msg, const MqttTopicConfi
                 QTextStream(stderr) << "SQL error: can not prepare statement: " << query.lastError().text() << Qt::endl;
             }
         }
+        else
+        {
+            QTextStream(stderr) << "Error: can not convert " << v.toString() << " to " << QVariant::typeToName(config.type) << Qt::endl;
+        }
     }
     else
     {
