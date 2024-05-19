@@ -352,7 +352,7 @@ void MqttSubscriber::handleAnyMessage(const QMqttMessage &msg)
  */
 void MqttSubscriber::handleMessage(const QMqttMessage &msg, const MqttTopicConfig &config)
 {
-    QTextStream(stdout) << "Message received. Topic: " << msg.topic().name() << ", Message: " << msg.payload() << Qt::endl;
+    QTextStream(stdout) << "Message received. Topic: " << msg.topic().name() << ", Message: " << msg.payload() << " ";
 
     QVariant v;
     if (config.jsonpath.isEmpty())
@@ -376,6 +376,7 @@ void MqttSubscriber::handleMessage(const QMqttMessage &msg, const MqttTopicConfi
             return;
         }
     }
+    QTextStream(stdout) << ", Value: " << v.toString() << Qt::endl;
 
     QSqlDatabase db = QSqlDatabase::database();
     if (db.isValid() && db.isOpen())
