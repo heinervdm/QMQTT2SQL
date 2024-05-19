@@ -369,7 +369,7 @@ void MqttSubscriber::handleMessage(const QMqttMessage &msg, const MqttTopicConfi
             return;
         }
         QtJsonPath jp(doc);
-        QVariant v = jp.getValue(config.jsonpath);
+        v = jp.getValue(config.jsonpath);
         if (v.isNull())
         {
             QTextStream(stderr) << "Error: can not extract value with JSONPath: " << config.jsonpath << Qt::endl;
