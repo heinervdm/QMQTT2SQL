@@ -23,8 +23,8 @@ sudo make install
 The configuration is given in an INI file.
 
 The MQTT connection parameters are given by the _hostname_, _port_, _username_, _password_, _version_, _usetls_ and _topic_ attributes.
-If no authentification is needed, _username_ and _password_ need to be empty.
-The _version_ attribute excepts three values: 3 for MQTT 3.1, 4 for MQTT 3.1.1 and 5 for MQTT 5.0.
+If no authentication is needed, _username_ and _password_ need to be empty.
+The _version_ attribute expects three values: 3 for MQTT 3.1, 4 for MQTT 3.1.1 and 5 for MQTT 5.0.
 If the MQTT connection is TLS encrypted the _usetls_ attribute should be set to true, false otherwise.
 The MQTT topic can be filtered with the _topic_ attribute, the default value is _#_ (everything).
 
